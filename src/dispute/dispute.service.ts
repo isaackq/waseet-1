@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import type { Request } from 'express';
 import { PaginationProvider } from 'src/common/pagination/providers/pagination.provider';
 import { DeliverableDocument } from 'src/deliverable/deliverable.schema';
@@ -22,6 +22,7 @@ import {
   MyDisputesFilterEnum,
 } from './dto/get-my-disputes.query.dto';
 import { DisputeStatus } from './enums/dispute-status.enum';
+import { GetAdminDisputesQueryDto } from './dto/get-admin-disputes.query.dto';
 import {
   Dispute,
   DisputeDocument,
@@ -35,6 +36,10 @@ import {
   DisputeResponseDocument,
 } from './schemas/dispute-response.schema';
 import { RolesEnum } from 'src/user/enums/role.enum';
+import {
+  RejectDisputeByAdminDto,
+  ResolveDisputeByAdminDto,
+} from './dto/admin-dispute-decision.dto';
 
 @Injectable()
 export class DisputeService {
@@ -126,18 +131,7 @@ export class DisputeService {
       return { dispute: null, evidence: [], responses: [] };
     }
 
-    const [evidence, responses] = await Promise.all([
-      this.disputeEvidenceModel
-        .find({ disputeId: dispute.id })
-        .sort({ createdAt: -1 })
-        .populate('uploadId submittedByUserId')
-        .exec(),
-      this.disputeResponseModel
-        .find({ disputeId: dispute.id })
-        .sort({ createdAt: 1 })
-        .populate('userId')
-        .exec(),
-    ]);
+    const { evidence, responses } = await this.loadDisputeThread(dispute.id);
 
     return { dispute, evidence, responses };
   }
@@ -152,20 +146,141 @@ export class DisputeService {
   }> {
     const dispute = await this.getDisputeById(disputeId, currentUser);
 
-    const [evidence, responses] = await Promise.all([
-      this.disputeEvidenceModel
-        .find({ disputeId: dispute.id })
-        .sort({ createdAt: -1 })
-        .populate('uploadId submittedByUserId')
-        .exec(),
-      this.disputeResponseModel
-        .find({ disputeId: dispute.id })
-        .sort({ createdAt: 1 })
-        .populate('userId')
-        .exec(),
-    ]);
+    const { evidence, responses } = await this.loadDisputeThread(dispute.id);
 
     return { dispute, evidence, responses };
+  }
+
+  async getAdminDisputes(
+    query: GetAdminDisputesQueryDto,
+    request: Request,
+  ) {
+    const filter: FilterQuery<DisputeDocument> = {};
+
+    if (query.status) {
+      filter.status = query.status;
+    }
+
+    if (query.search?.trim()) {
+      const search = query.search.trim();
+      filter.$or = [
+        { reason: { $regex: search, $options: 'i' } },
+        { adminDecision: { $regex: search, $options: 'i' } },
+        { resolution: { $regex: search, $options: 'i' } },
+      ];
+
+      if (Types.ObjectId.isValid(search)) {
+        filter.$or.push({ _id: new Types.ObjectId(search) } as any);
+      }
+    }
+
+    const disputes = await this.paginationProvider.paginateMongooseQuery(
+      { limit: query.limit, page: query.page },
+      this.disputeModel as any,
+      filter,
+      { createdAt: -1 },
+      request,
+    );
+
+    const populatedData = await this.disputeModel.populate(disputes.data, [
+      {
+        path: 'sessionId',
+        populate: [{ path: 'user1' }, { path: 'user2' }],
+      },
+      { path: 'deliverableId' },
+      { path: 'openedByUserId' },
+    ]);
+
+    const [total, open, underReview, resolved, rejected] = await Promise.all([
+      this.disputeModel.countDocuments({}),
+      this.disputeModel.countDocuments({ status: DisputeStatus.OPEN }),
+      this.disputeModel.countDocuments({ status: DisputeStatus.UNDER_REVIEW }),
+      this.disputeModel.countDocuments({ status: DisputeStatus.RESOLVED }),
+      this.disputeModel.countDocuments({ status: DisputeStatus.REJECTED }),
+    ]);
+
+    return {
+      summary: {
+        total,
+        open,
+        underReview,
+        resolved,
+        rejected,
+      },
+      ...disputes,
+      data: populatedData,
+    };
+  }
+
+  async getAdminDisputeDetailsById(disputeId: string): Promise<{
+    dispute: DisputeDocument;
+    evidence: DisputeEvidenceDocument[];
+    responses: DisputeResponseDocument[];
+  }> {
+    const dispute = await this.disputeModel
+      .findById(disputeId)
+      .populate([
+        {
+          path: 'sessionId',
+          populate: [{ path: 'user1' }, { path: 'user2' }],
+        },
+        {
+          path: 'deliverableId',
+          populate: [{ path: 'uploadedBy' }, { path: 'uploadId' }],
+        },
+        { path: 'openedByUserId' },
+      ])
+      .exec();
+
+    if (!dispute) {
+      throw new NotFoundException('Dispute not found');
+    }
+
+    const { evidence, responses } = await this.loadDisputeThread(dispute.id);
+
+    return { dispute, evidence, responses };
+  }
+
+  async resolveDisputeByAdmin(
+    disputeId: string,
+    dto: ResolveDisputeByAdminDto,
+  ): Promise<DisputeDocument> {
+    const dispute = await this.getExistingDisputeForAdmin(disputeId);
+
+    if ([DisputeStatus.RESOLVED, DisputeStatus.REJECTED].includes(dispute.status)) {
+      throw new BadRequestException(
+        `Dispute is already closed with status: ${dispute.status}`,
+      );
+    }
+
+    dispute.status = DisputeStatus.RESOLVED;
+    dispute.adminDecision = dto.adminDecision;
+    dispute.resolution = dto.resolution;
+    dispute.resolvedAt = new Date();
+    await dispute.save();
+
+    return await this.populateAdminDispute(dispute);
+  }
+
+  async rejectDisputeByAdmin(
+    disputeId: string,
+    dto: RejectDisputeByAdminDto,
+  ): Promise<DisputeDocument> {
+    const dispute = await this.getExistingDisputeForAdmin(disputeId);
+
+    if ([DisputeStatus.RESOLVED, DisputeStatus.REJECTED].includes(dispute.status)) {
+      throw new BadRequestException(
+        `Dispute is already closed with status: ${dispute.status}`,
+      );
+    }
+
+    dispute.status = DisputeStatus.REJECTED;
+    dispute.adminDecision = dto.adminDecision;
+    dispute.resolution = dto.resolution ?? null;
+    dispute.resolvedAt = new Date();
+    await dispute.save();
+
+    return await this.populateAdminDispute(dispute);
   }
 
   async submitEvidence(
@@ -424,5 +539,53 @@ export class DisputeService {
       return RolesEnum.CLIENT;
     }
     return RolesEnum.USER;
+  }
+
+  private async loadDisputeThread(disputeId: string): Promise<{
+    evidence: DisputeEvidenceDocument[];
+    responses: DisputeResponseDocument[];
+  }> {
+    const [evidence, responses] = await Promise.all([
+      this.disputeEvidenceModel
+        .find({ disputeId })
+        .sort({ createdAt: -1 })
+        .populate('uploadId submittedByUserId')
+        .exec(),
+      this.disputeResponseModel
+        .find({ disputeId })
+        .sort({ createdAt: 1 })
+        .populate('userId')
+        .exec(),
+    ]);
+
+    return { evidence, responses };
+  }
+
+  private async getExistingDisputeForAdmin(
+    disputeId: string,
+  ): Promise<DisputeDocument> {
+    const dispute = await this.disputeModel.findById(disputeId).exec();
+
+    if (!dispute) {
+      throw new NotFoundException('Dispute not found');
+    }
+
+    return dispute;
+  }
+
+  private async populateAdminDispute(
+    dispute: DisputeDocument,
+  ): Promise<DisputeDocument> {
+    return await dispute.populate([
+      {
+        path: 'sessionId',
+        populate: [{ path: 'user1' }, { path: 'user2' }],
+      },
+      {
+        path: 'deliverableId',
+        populate: [{ path: 'uploadedBy' }, { path: 'uploadId' }],
+      },
+      { path: 'openedByUserId' },
+    ]);
   }
 }

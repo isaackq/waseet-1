@@ -3,6 +3,7 @@ import { registerAs } from '@nestjs/config';
 export default registerAs('appConfig', () => ({
   //   environment: process.env.NODE_ENV || 'production',
   apiVersion: process.env.API_VERSION,
+  appUrl: process.env.APP_URL,
   awsBucketName: process.env.AWS_PUBLIC_BUCKET_NAME,
   awsRegion: process.env.AWS_REGION,
   awsCloudfrontUrl: process.env.AWS_CLOUDFRONT_URL,

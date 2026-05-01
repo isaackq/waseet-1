@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { ClientSession, Connection, Model, Types } from 'mongoose';
 import { Session, SessionDocument } from './session.schema';
@@ -82,6 +83,7 @@ export class SessionService {
     private readonly userCurrencyModel: Model<UserCurrencyDocument>,
     private readonly paginationProvider: PaginationProvider,
     private readonly mailService: MailService,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -182,7 +184,7 @@ export class SessionService {
     const joinCode = await this.generateUniqueJoinCode();
 
     // 6. Generate join URL
-    const joinUrl = `${process.env.APP_URL || 'http://localhost:3000'}/sessions/join/${joinCode}`;
+    const joinUrl = `${this.getAppUrl()}/sessions/join/${joinCode}`;
 
     // 7. Calculate expiry time (1 hour from now)
     const joinExpiresAt = new Date();
@@ -343,6 +345,13 @@ export class SessionService {
       .trim();
 
     return fullName || user.identificationName || user.email || 'Waseet User';
+  }
+
+  private getAppUrl(): string {
+    return (
+      this.configService.get<string>('appConfig.appUrl') ||
+      'http://localhost:3000'
+    );
   }
 
   /**
@@ -547,7 +556,7 @@ export class SessionService {
 
     // Generate new code
     const newJoinCode = await this.generateUniqueJoinCode();
-    const newJoinUrl = `${process.env.APP_URL || 'http://localhost:3000'}/sessions/join/${newJoinCode}`;
+    const newJoinUrl = `${this.getAppUrl()}/sessions/join/${newJoinCode}`;
 
     // Set new expiry (1 hour from now)
     const newExpiresAt = new Date();

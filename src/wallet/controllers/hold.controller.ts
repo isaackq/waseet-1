@@ -29,18 +29,21 @@ import { HoldService } from '../services/hold.service';
 export class HoldController {
   constructor(private readonly holdService: HoldService) {}
 
-  @ApiOperation({ summary: 'Create hold (Admin)' })
-  @ApiBody({ type: CreateHoldRequestDto })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'Hold created successfully' })
-  @Roles([RolesEnum.ADMIN])
-  @Post('create')
-  async create(@Body(new ValidationPipe()) createHoldDto: CreateHoldRequestDto) {
-    const hold = await this.holdService.create(createHoldDto);
-    return { message: 'Hold created successfully', hold };
-  }
+  // @ApiOperation({ summary: 'Create hold (Admin)' })
+  // @ApiBody({ type: CreateHoldRequestDto })
+  // @ApiResponse({ status: HttpStatus.CREATED, description: 'Hold created successfully' })
+  // @Roles([RolesEnum.ADMIN])
+  // @Post('create')
+  // async create(@Body(new ValidationPipe()) createHoldDto: CreateHoldRequestDto) {
+  //   const hold = await this.holdService.create(createHoldDto);
+  //   return { message: 'Hold created successfully', hold };
+  // }
 
   @ApiOperation({ summary: 'Get all holds (Admin)' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Holds retrieved successfully' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Holds retrieved successfully',
+  })
   @Roles([RolesEnum.ADMIN])
   @Get('all')
   async findAll() {
@@ -50,7 +53,10 @@ export class HoldController {
 
   @ApiOperation({ summary: 'Get hold by id (Admin)' })
   @ApiParam({ name: 'id', description: 'Hold ID' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Hold retrieved successfully' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Hold retrieved successfully',
+  })
   @Roles([RolesEnum.ADMIN])
   @Get(':id')
   async findOne(@Param('id') id: string) {
@@ -58,28 +64,33 @@ export class HoldController {
     return { hold };
   }
 
-  @ApiOperation({ summary: 'Update hold (Admin)' })
-  @ApiParam({ name: 'id', description: 'Hold ID' })
-  @ApiBody({ type: UpdateHoldRequestDto })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Hold updated successfully' })
-  @Roles([RolesEnum.ADMIN])
-  @Patch(':id')
-  async update(
-    @Param('id') id: string,
-    @Body(new ValidationPipe()) updateHoldDto: UpdateHoldRequestDto,
-  ) {
-    const hold = await this.holdService.update(id, updateHoldDto);
-    return { message: 'Hold updated successfully', hold };
-  }
+  // @ApiOperation({ summary: 'Update hold (Admin)' })
+  // @ApiParam({ name: 'id', description: 'Hold ID' })
+  // @ApiBody({ type: UpdateHoldRequestDto })
+  // @ApiResponse({
+  //   status: HttpStatus.OK,
+  //   description: 'Hold updated successfully',
+  // })
+  // @Roles([RolesEnum.ADMIN])
+  // @Patch(':id')
+  // async update(
+  //   @Param('id') id: string,
+  //   @Body(new ValidationPipe()) updateHoldDto: UpdateHoldRequestDto,
+  // ) {
+  //   const hold = await this.holdService.update(id, updateHoldDto);
+  //   return { message: 'Hold updated successfully', hold };
+  // }
 
-  @ApiOperation({ summary: 'Delete hold (Admin)' })
-  @ApiParam({ name: 'id', description: 'Hold ID' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Hold deleted successfully' })
-  @Roles([RolesEnum.ADMIN])
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
-    await this.holdService.remove(id);
-    return { message: 'Hold deleted successfully' };
-  }
+  // @ApiOperation({ summary: 'Delete hold (Admin)' })
+  // @ApiParam({ name: 'id', description: 'Hold ID' })
+  // @ApiResponse({
+  //   status: HttpStatus.OK,
+  //   description: 'Hold deleted successfully',
+  // })
+  // @Roles([RolesEnum.ADMIN])
+  // @Delete(':id')
+  // async remove(@Param('id') id: string) {
+  //   await this.holdService.remove(id);
+  //   return { message: 'Hold deleted successfully' };
+  // }
 }
-

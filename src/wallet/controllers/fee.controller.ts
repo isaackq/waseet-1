@@ -29,18 +29,21 @@ import { FeeService } from '../services/fee.service';
 export class FeeController {
   constructor(private readonly feeService: FeeService) {}
 
-  @ApiOperation({ summary: 'Create fee (Admin)' })
-  @ApiBody({ type: CreateFeeRequestDto })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'Fee created successfully' })
-  @Roles([RolesEnum.ADMIN])
-  @Post('create')
-  async create(@Body(new ValidationPipe()) createFeeDto: CreateFeeRequestDto) {
-    const fee = await this.feeService.create(createFeeDto);
-    return { message: 'Fee created successfully', fee };
-  }
+  // @ApiOperation({ summary: 'Create fee (Admin)' })
+  // @ApiBody({ type: CreateFeeRequestDto })
+  // @ApiResponse({ status: HttpStatus.CREATED, description: 'Fee created successfully' })
+  // @Roles([RolesEnum.ADMIN])
+  // @Post('create')
+  // async create(@Body(new ValidationPipe()) createFeeDto: CreateFeeRequestDto) {
+  //   const fee = await this.feeService.create(createFeeDto);
+  //   return { message: 'Fee created successfully', fee };
+  // }
 
   @ApiOperation({ summary: 'Get all fees (Admin)' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Fees retrieved successfully' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Fees retrieved successfully',
+  })
   @Roles([RolesEnum.ADMIN])
   @Get('all')
   async findAll() {
@@ -50,7 +53,10 @@ export class FeeController {
 
   @ApiOperation({ summary: 'Get fee by id (Admin)' })
   @ApiParam({ name: 'id', description: 'Fee ID' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Fee retrieved successfully' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Fee retrieved successfully',
+  })
   @Roles([RolesEnum.ADMIN])
   @Get(':id')
   async findOne(@Param('id') id: string) {
@@ -58,28 +64,27 @@ export class FeeController {
     return { fee };
   }
 
-  @ApiOperation({ summary: 'Update fee (Admin)' })
-  @ApiParam({ name: 'id', description: 'Fee ID' })
-  @ApiBody({ type: UpdateFeeRequestDto })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Fee updated successfully' })
-  @Roles([RolesEnum.ADMIN])
-  @Patch(':id')
-  async update(
-    @Param('id') id: string,
-    @Body(new ValidationPipe()) updateFeeDto: UpdateFeeRequestDto,
-  ) {
-    const fee = await this.feeService.update(id, updateFeeDto);
-    return { message: 'Fee updated successfully', fee };
-  }
+  // @ApiOperation({ summary: 'Update fee (Admin)' })
+  // @ApiParam({ name: 'id', description: 'Fee ID' })
+  // @ApiBody({ type: UpdateFeeRequestDto })
+  // @ApiResponse({ status: HttpStatus.OK, description: 'Fee updated successfully' })
+  // @Roles([RolesEnum.ADMIN])
+  // @Patch(':id')
+  // async update(
+  //   @Param('id') id: string,
+  //   @Body(new ValidationPipe()) updateFeeDto: UpdateFeeRequestDto,
+  // ) {
+  //   const fee = await this.feeService.update(id, updateFeeDto);
+  //   return { message: 'Fee updated successfully', fee };
+  // }
 
-  @ApiOperation({ summary: 'Delete fee (Admin)' })
-  @ApiParam({ name: 'id', description: 'Fee ID' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Fee deleted successfully' })
-  @Roles([RolesEnum.ADMIN])
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
-    await this.feeService.remove(id);
-    return { message: 'Fee deleted successfully' };
-  }
+  // @ApiOperation({ summary: 'Delete fee (Admin)' })
+  // @ApiParam({ name: 'id', description: 'Fee ID' })
+  // @ApiResponse({ status: HttpStatus.OK, description: 'Fee deleted successfully' })
+  // @Roles([RolesEnum.ADMIN])
+  // @Delete(':id')
+  // async remove(@Param('id') id: string) {
+  //   await this.feeService.remove(id);
+  //   return { message: 'Fee deleted successfully' };
+  // }
 }
-

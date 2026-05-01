@@ -5,6 +5,7 @@ import { Deliverable, DeliverableSchema } from 'src/deliverable/deliverable.sche
 import { SessionModule } from 'src/session/session.module';
 import { Session, SessionSchema } from 'src/session/session.schema';
 import { UploadsModule } from 'src/uploads/uploads.module';
+import { AdminDisputeController } from './admin-dispute.controller';
 import { DisputeController } from './dispute.controller';
 import { DisputeService } from './dispute.service';
 import { DisputeEvidence, DisputeEvidenceSchema } from './schemas/dispute-evidence.schema';
@@ -24,7 +25,7 @@ import { Dispute, DisputeSchema } from './schemas/dispute.schema';
     UploadsModule,
     PaginationModule,
   ],
-  controllers: [DisputeController],
+  controllers: [DisputeController, AdminDisputeController],
   providers: [DisputeService],
   exports: [DisputeService],
 })
