@@ -1,0 +1,27 @@
+<div style="max-width: 600px; margin: 20px auto; padding: 20px; font-family: Arial, sans-serif; font-size: 16px; color: #333333; background-color: #f9f9f9; border: 1px solid #dddddd; border-radius: 8px;">
+  
+  <p style="margin-bottom: 20px;">
+    👋 Hello, <%= name %> <br>
+    Below are your account details:
+  </p>
+
+  <div style="background-color: #ffffff; padding: 15px 20px; border: 1px solid #eeeeee; border-radius: 6px;">
+    <ul style="list-style: none; padding-left: 0; margin: 0; line-height: 1.8;">
+      <li style="color: #555555; margin-bottom: 10px;">
+        <strong>📧 Email:</strong> <%= email %>
+      </li>
+      <li style="color: #555555;">
+        <strong>🔗 Login URL:</strong> 
+        <a href="<%= loginUrl %>" style="color: #1a73e8; text-decoration: none;">
+          <%= loginUrl %>
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <p style="margin-top: 30px;">
+    Thank you!<br>
+    <strong style="color: #1a73e8;">NestJS Blog Support Team</strong>
+  </p>
+
+</div>

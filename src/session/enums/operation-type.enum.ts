@@ -1,0 +1,5 @@
+export enum OperationType {
+  FREELANCER_PREPAY = 'FREELANCER_PREPAY',
+  EXCHANGE = 'EXCHANGE',
+  SERVICE = 'SERVICE',
+}

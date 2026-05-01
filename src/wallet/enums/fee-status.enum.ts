@@ -1,0 +1,6 @@
+export enum FeeStatusEnum {
+  PENDING = 'PENDING',
+  SETTLED = 'SETTLED',
+  REFUNDED = 'REFUNDED',
+  CANCELLED = 'CANCELLED',
+}
