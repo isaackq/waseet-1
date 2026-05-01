@@ -446,18 +446,7 @@ export class DisputeService {
     query: GetMyDisputesQueryDto,
     request: Request,
   ) {
-    const userSessionIds = (
-      await this.sessionModel
-        .find({
-          $or: [{ user1: currentUser.id }, { user2: currentUser.id }],
-        })
-        .select('_id')
-        .lean<{ _id: Types.ObjectId }[]>()
-    ).map((session) => session._id);
-
-    const filter: FilterQuery<DisputeDocument> = {
-      sessionId: { $in: userSessionIds },
-    };
+    const filter: FilterQuery<DisputeDocument> = {};
 
     if (query.filter === MyDisputesFilterEnum.PENDING) {
       filter.status = { $in: [DisputeStatus.OPEN, DisputeStatus.UNDER_REVIEW] };
@@ -473,49 +462,52 @@ export class DisputeService {
 
     if (query.search?.trim()) {
       const search = query.search.trim();
-      filter.$and = [
-        { sessionId: { $in: userSessionIds } },
-        {
-          $or: [
-            { reason: { $regex: search, $options: 'i' } },
-            { adminDecision: { $regex: search, $options: 'i' } },
-            { resolution: { $regex: search, $options: 'i' } },
-          ],
-        },
+      filter.$or = [
+        { reason: { $regex: search, $options: 'i' } },
+        { adminDecision: { $regex: search, $options: 'i' } },
+        { resolution: { $regex: search, $options: 'i' } },
+        ...(Types.ObjectId.isValid(search)
+          ? [{ _id: new Types.ObjectId(search) } as any]
+          : []),
       ];
-      delete filter.$or;
     }
 
-    const disputes = await this.paginationProvider.paginateMongooseQuery(
-      { limit: query.limit, page: query.page },
-      this.disputeModel as any,
-      filter,
-      { createdAt: -1 },
-      request,
+    const page = query.page;
+    const limit = query.limit;
+    const allMatchedDisputes = await this.disputeModel
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .populate([
+        { path: 'sessionId' },
+        { path: 'deliverableId' },
+        { path: 'openedByUserId' },
+      ])
+      .exec();
+
+    const accessibleDisputes = allMatchedDisputes.filter((dispute) =>
+      this.isUserParticipantInDisputeSession(dispute, currentUser.id),
     );
 
-    const populatedData = await this.disputeModel.populate(disputes.data, [
-      { path: 'sessionId' },
-      { path: 'deliverableId' },
-      { path: 'openedByUserId' },
-    ]);
+    const total = accessibleDisputes.length;
+    const pending = accessibleDisputes.filter((dispute) =>
+      [DisputeStatus.OPEN, DisputeStatus.UNDER_REVIEW].includes(dispute.status),
+    ).length;
+    const resolved = accessibleDisputes.filter(
+      (dispute) => dispute.status === DisputeStatus.RESOLVED,
+    ).length;
+    const rejected = accessibleDisputes.filter(
+      (dispute) => dispute.status === DisputeStatus.REJECTED,
+    ).length;
 
-    const baseFilter = { sessionId: { $in: userSessionIds } };
-    const [total, pending, resolved, rejected] = await Promise.all([
-      this.disputeModel.countDocuments(baseFilter),
-      this.disputeModel.countDocuments({
-        ...baseFilter,
-        status: { $in: [DisputeStatus.OPEN, DisputeStatus.UNDER_REVIEW] },
-      }),
-      this.disputeModel.countDocuments({
-        ...baseFilter,
-        status: DisputeStatus.RESOLVED,
-      }),
-      this.disputeModel.countDocuments({
-        ...baseFilter,
-        status: DisputeStatus.REJECTED,
-      }),
-    ]);
+    const orderedData = accessibleDisputes.slice((page - 1) * limit, page * limit);
+
+    const totalPages = Math.ceil(total / limit) || 1;
+    const currentUrl = new URL(
+      request.url,
+      `${request.protocol}://${request.headers.host}/`,
+    );
+    const buildLink = (targetPage: number) =>
+      `${currentUrl.origin}${currentUrl.pathname}?limit=${limit}&page=${targetPage}`;
 
     return {
       summary: {
@@ -524,8 +516,20 @@ export class DisputeService {
         resolved,
         rejected,
       },
-      ...disputes,
-      data: populatedData,
+      data: orderedData,
+      meta: {
+        itemsPerPage: limit,
+        totalItems: total,
+        cuurentPage: page,
+        totalPages,
+      },
+      links: {
+        first: buildLink(1),
+        last: buildLink(totalPages),
+        cuurent: buildLink(page),
+        next: buildLink(page === totalPages ? page : page + 1),
+        previous: buildLink(page === 1 ? page : page - 1),
+      },
     };
   }
 
@@ -598,5 +602,20 @@ export class DisputeService {
       },
       { path: 'openedByUserId' },
     ]);
+  }
+
+  private isUserParticipantInDisputeSession(
+    dispute: DisputeDocument,
+    userId: string,
+  ): boolean {
+    const session = dispute.sessionId as unknown as SessionDocument | null;
+
+    if (!session) {
+      return false;
+    }
+
+    return (
+      session.user1?.toString() === userId || session.user2?.toString() === userId
+    );
   }
 }
