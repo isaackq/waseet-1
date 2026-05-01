@@ -9,7 +9,7 @@ import { FilterQuery, Model, Types } from 'mongoose';
 import type { Request } from 'express';
 import { PaginationProvider } from 'src/common/pagination/providers/pagination.provider';
 import { DeliverableDocument } from 'src/deliverable/deliverable.schema';
-import { SessionDocument } from 'src/session/session.schema';
+import { Session, SessionDocument } from 'src/session/session.schema';
 import { SessionService } from 'src/session/session.service';
 import { SessionStatus } from 'src/session/enums/session-status.enum';
 import { UploadsService } from 'src/uploads/providers/uploads.service';
@@ -50,6 +50,8 @@ export class DisputeService {
     private readonly disputeEvidenceModel: Model<DisputeEvidenceDocument>,
     @InjectModel(DisputeResponse.name)
     private readonly disputeResponseModel: Model<DisputeResponseDocument>,
+    @InjectModel(Session.name)
+    private readonly sessionModel: Model<SessionDocument>,
     private readonly sessionService: SessionService,
     private readonly uploadsService: UploadsService,
     private readonly paginationProvider: PaginationProvider,
@@ -444,8 +446,17 @@ export class DisputeService {
     query: GetMyDisputesQueryDto,
     request: Request,
   ) {
+    const userSessionIds = (
+      await this.sessionModel
+        .find({
+          $or: [{ user1: currentUser.id }, { user2: currentUser.id }],
+        })
+        .select('_id')
+        .lean<{ _id: Types.ObjectId }[]>()
+    ).map((session) => session._id);
+
     const filter: FilterQuery<DisputeDocument> = {
-      $or: [{ openedByUserId: currentUser.id }],
+      sessionId: { $in: userSessionIds },
     };
 
     if (query.filter === MyDisputesFilterEnum.PENDING) {
@@ -463,7 +474,7 @@ export class DisputeService {
     if (query.search?.trim()) {
       const search = query.search.trim();
       filter.$and = [
-        { $or: [{ openedByUserId: currentUser.id }] },
+        { sessionId: { $in: userSessionIds } },
         {
           $or: [
             { reason: { $regex: search, $options: 'i' } },
@@ -489,7 +500,7 @@ export class DisputeService {
       { path: 'openedByUserId' },
     ]);
 
-    const baseFilter = { openedByUserId: currentUser.id };
+    const baseFilter = { sessionId: { $in: userSessionIds } };
     const [total, pending, resolved, rejected] = await Promise.all([
       this.disputeModel.countDocuments(baseFilter),
       this.disputeModel.countDocuments({

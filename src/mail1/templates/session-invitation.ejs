@@ -1,6 +1,6 @@
-<div style="margin:0;padding:32px 16px;background:#f3f0e8;font-family:Arial,sans-serif;color:#1f2937;">
-  <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;">
-    <div style="padding:28px 32px;background:linear-gradient(135deg,#0f766e 0%,#155e75 100%);color:#ffffff;">
+<div style="margin:0;padding:32px 16px;background:#f8fafc;font-family:Arial,sans-serif;color:#0f172a;">
+  <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:18px;overflow:hidden;box-shadow:0 18px 60px rgba(15,23,42,0.10);">
+    <div style="padding:28px 32px;background:linear-gradient(135deg,#08729f 0%,#0a5f86 100%);color:#ffffff;">
       <div style="font-size:12px;letter-spacing:1.4px;text-transform:uppercase;opacity:0.9;">Waseet Session Invitation</div>
       <h1 style="margin:12px 0 0;font-size:28px;line-height:1.2;">You have been invited to join a project</h1>
     </div>
@@ -10,20 +10,20 @@
         Hello <strong><%= clientName %></strong>,
       </p>
 
-      <p style="margin:0 0 24px;font-size:16px;line-height:1.7;color:#374151;">
+      <p style="margin:0 0 24px;font-size:16px;line-height:1.7;color:#334155;">
         <strong><%= freelancerName %></strong> created a session for you on Waseet.
         Use the join code below to open the session and continue the project flow.
       </p>
 
-      <div style="margin:0 0 28px;padding:24px;background:#0f172a;border-radius:16px;text-align:center;">
-        <div style="font-size:12px;letter-spacing:1.6px;text-transform:uppercase;color:#94a3b8;">Join Code</div>
-        <div style="margin-top:10px;font-size:36px;letter-spacing:8px;font-weight:700;color:#f8fafc;"><%= joinCode %></div>
+      <div style="margin:0 0 28px;padding:24px;background:#071b33;border-radius:16px;text-align:center;">
+        <div style="font-size:12px;letter-spacing:1.6px;text-transform:uppercase;color:#a7cfe0;">Join Code</div>
+        <div style="margin-top:10px;font-size:36px;letter-spacing:8px;font-weight:800;color:#ffffff;"><%= joinCode %></div>
       </div>
 
-      <div style="margin:0 0 28px;padding:20px 22px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;">
-        <div style="font-size:18px;font-weight:700;color:#111827;margin:0 0 14px;"><%= projectTitle %></div>
-        <div style="font-size:14px;line-height:1.7;color:#4b5563;margin:0 0 14px;"><%= projectDescription %></div>
-        <div style="font-size:14px;color:#111827;"><strong>Deadline:</strong> <%= deadline %></div>
+      <div style="margin:0 0 28px;padding:20px 22px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;">
+        <div style="font-size:18px;font-weight:800;color:#0f172a;margin:0 0 14px;"><%= projectTitle %></div>
+        <div style="font-size:14px;line-height:1.7;color:#475569;margin:0 0 14px;"><%= projectDescription %></div>
+        <div style="font-size:14px;color:#0f172a;"><strong>Deadline:</strong> <%= deadline %></div>
       </div>
 
       <div style="margin:0 0 28px;">
@@ -36,14 +36,14 @@
       </div>
 
       <div style="margin:0 0 28px;">
-        <a href="<%= joinUrl %>" style="display:inline-block;padding:14px 22px;background:#0f766e;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;">
+        <a href="<%= joinUrl %>" style="display:inline-block;padding:14px 22px;background:#08729f;color:#ffffff;text-decoration:none;border-radius:12px;font-weight:800;box-shadow:0 14px 30px rgba(8,114,159,0.18);">
           Open Session
         </a>
       </div>
 
       <p style="margin:0;font-size:13px;line-height:1.7;color:#6b7280;">
         If the button does not work, use this link:<br>
-        <a href="<%= joinUrl %>" style="color:#0f766e;text-decoration:none;"><%= joinUrl %></a>
+        <a href="<%= joinUrl %>" style="color:#08729f;text-decoration:none;"><%= joinUrl %></a>
       </p>
     </div>
   </div>
