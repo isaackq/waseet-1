@@ -198,6 +198,26 @@ export class UserService {
   ): Promise<paginated<UserResponseDto>> {
     const filter: FilterQuery<UserDocument> = {};
 
+    if (usersQuery.search?.trim()) {
+      const search = usersQuery.search.trim();
+      filter.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { middleName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { identificationName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { phoneNumber: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    if (usersQuery.role) {
+      filter.role = usersQuery.role;
+    }
+
+    if (typeof usersQuery.isActive === 'boolean') {
+      filter.isActive = usersQuery.isActive;
+    }
+
     if (usersQuery.startDate || usersQuery.endDate) {
       filter.createdAt = {};
 

@@ -189,4 +189,23 @@ export class UserController {
   ) {
     return await this.userService.findAll(usersQuery, request);
   }
+
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get paginated system users for admin panel',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'System users returned successfully',
+  })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad request' })
+  @Roles([RolesEnum.ADMIN])
+  @Get('system')
+  async findSystemUsers(
+    @Query(new ValidationPipe({ transform: true }))
+    usersQuery: GetUsersRequestDto,
+    @Req() request: Request,
+  ) {
+    return await this.userService.findAll(usersQuery, request);
+  }
 }
