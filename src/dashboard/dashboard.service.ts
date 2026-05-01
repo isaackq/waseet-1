@@ -15,6 +15,8 @@ import {
 } from 'src/wallet/schemas/user-currency.schema';
 import { Wallet, WalletDocument } from 'src/wallet/schemas/wallet.schema';
 import type { UserDocument } from 'src/user/user.schema';
+import { User } from 'src/user/user.schema';
+import { RolesEnum } from 'src/user/enums/role.enum';
 
 @Injectable()
 export class DashboardService {
@@ -27,6 +29,8 @@ export class DashboardService {
     private readonly walletModel: Model<WalletDocument>,
     @InjectModel(Transaction.name)
     private readonly transactionModel: Model<TransactionDocument>,
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
   ) {}
 
   async getOverview(currentUser: UserDocument, recentLimit = 5) {
@@ -118,5 +122,114 @@ export class DashboardService {
         createdAt: payment.createdAt,
       })),
     };
+  }
+
+  async getAdminOverview() {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const monthStarts = this.buildLast12MonthStarts(now);
+    const firstMonthStart = monthStarts[0];
+
+    const [totalUsers, newUsersLast7Days, usersCreatedBeforeWindow, monthlyNewUsers, usersBySegment] =
+      await Promise.all([
+        this.userModel.countDocuments({}),
+        this.userModel.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+        this.userModel.countDocuments({ createdAt: { $lt: firstMonthStart } }),
+        this.userModel.aggregate([
+          { $match: { createdAt: { $gte: firstMonthStart } } },
+          {
+            $group: {
+              _id: {
+                year: { $year: '$createdAt' },
+                month: { $month: '$createdAt' },
+              },
+              count: { $sum: 1 },
+            },
+          },
+        ]),
+        this.userModel.aggregate([
+          { $unwind: '$role' },
+          {
+            $group: {
+              _id: '$role',
+              count: { $sum: 1 },
+            },
+          },
+        ]),
+      ]);
+
+    const monthlyMap = new Map<string, number>();
+    for (const item of monthlyNewUsers) {
+      const key = `${item._id.year}-${String(item._id.month).padStart(2, '0')}`;
+      monthlyMap.set(key, item.count);
+    }
+
+    let runningTotal = usersCreatedBeforeWindow;
+    const growth = monthStarts.map((monthStart) => {
+      const key = `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`;
+      const newUsers = monthlyMap.get(key) ?? 0;
+      runningTotal += newUsers;
+
+      return {
+        month: monthStart.toLocaleString('en-US', { month: 'short' }),
+        year: monthStart.getFullYear(),
+        newUsers,
+        cumulativeUsers: runningTotal,
+      };
+    });
+
+    const segmentCounts = {
+      [RolesEnum.USER]: 0,
+      [RolesEnum.FREELANCER]: 0,
+      [RolesEnum.CLIENT]: 0,
+      [RolesEnum.ADMIN]: 0,
+    };
+
+    for (const item of usersBySegment) {
+      if (item._id in segmentCounts) {
+        segmentCounts[item._id] = item.count;
+      }
+    }
+
+    return {
+      stats: {
+        totalUsers,
+        newUsersLast7Days,
+      },
+      growth,
+      segments: [
+        {
+          role: RolesEnum.USER,
+          count: segmentCounts[RolesEnum.USER],
+        },
+        {
+          role: RolesEnum.FREELANCER,
+          count: segmentCounts[RolesEnum.FREELANCER],
+        },
+        {
+          role: RolesEnum.CLIENT,
+          count: segmentCounts[RolesEnum.CLIENT],
+        },
+        {
+          role: RolesEnum.ADMIN,
+          count: segmentCounts[RolesEnum.ADMIN],
+        },
+      ],
+    };
+  }
+
+  private buildLast12MonthStarts(now: Date): Date[] {
+    const monthStarts: Date[] = [];
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    for (let i = 11; i >= 0; i -= 1) {
+      monthStarts.push(
+        new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth() - i, 1),
+      );
+    }
+
+    return monthStarts;
   }
 }
