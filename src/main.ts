@@ -27,8 +27,8 @@ async function bootstrap() {
       'MIT License',
       'https://github.com/git/git-scm.com/blob/main/MIT-LICENSE.txt',
     )
-    .addServer('http://localhost:3000', 'Local development server') //يعني الطلبات بتنبعت على هادا السيرفر
     .addServer('https://immense-ridge-71125-2989a571143a.herokuapp.com') // Production
+    .addServer('http://localhost:3000', 'Local development server') //يعني الطلبات بتنبعت على هادا السيرفر
     .setVersion('1.0')
     .addTag('Waseet App') //تصنيف عام لل API
     .addBearerAuth()
