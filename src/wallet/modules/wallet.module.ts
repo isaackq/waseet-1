@@ -4,6 +4,7 @@ import { TransactionController } from '../controllers/transaction.controller';
 import { WalletPaymentController } from '../controllers/wallet-payment.controller';
 import { HoldController } from '../controllers/hold.controller';
 import { FeeController } from '../controllers/fee.controller';
+import { AdminFeeController } from '../controllers/admin-fee.controller';
 import { WalletService } from '../services/wallet.service';
 import { UserCurrencyService } from '../services/user-currency.service';
 import { TransactionService } from '../services/transaction.service';
@@ -56,6 +57,7 @@ import { WalletPaymentService } from '../services/wallet-payment.service';
     WalletPaymentController,
     HoldController,
     FeeController,
+    AdminFeeController,
   ],
   providers: [
     WalletService,

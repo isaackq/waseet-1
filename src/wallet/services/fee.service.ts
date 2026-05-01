@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateFeeRequestDto } from '../dto/fee/request/create-fee.request.dto';
 import { UpdateFeeRequestDto } from '../dto/fee/request/update-fee.request.dto';
+import { FeeStatusEnum } from '../enums/fee-status.enum';
 import { Fee, FeeDocument } from '../schemas/fee.schema';
 
 @Injectable()
@@ -52,5 +53,47 @@ export class FeeService {
       throw new NotFoundException('Fee not found');
     }
   }
-}
 
+  async getAdminMonthlyTotal(month: number, year: number) {
+    const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+    const endDate = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+
+    const [result, feesCount] = await Promise.all([
+      this.feeModel.aggregate([
+        {
+          $match: {
+            status: FeeStatusEnum.SETTLED,
+            createdAt: {
+              $gte: startDate,
+              $lt: endDate,
+            },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalFees: { $sum: '$amount' },
+          },
+        },
+      ]),
+      this.feeModel.countDocuments({
+        status: FeeStatusEnum.SETTLED,
+        createdAt: {
+          $gte: startDate,
+          $lt: endDate,
+        },
+      }),
+    ]);
+
+    return {
+      month,
+      year,
+      totalFees: result[0]?.totalFees ?? 0,
+      feesCount,
+      period: {
+        startDate,
+        endDate,
+      },
+    };
+  }
+}
